@@ -39,6 +39,6 @@
     "proseWrap": "always"
   },
   "files": [
-    "src"
+    "dist"
   ]
 }
