@@ -19,7 +19,7 @@ See "more details" below for... well... more details.
 
 ## Installation
 
-```
+```bash
 npm install --save graphql-toe
 yarn add graphql-toe
 pnpm install --save graphql-toe
@@ -39,7 +39,42 @@ otherwise it's recursively modified to replace errored fields with a getter that
 throws. In the case that `data` itself is `null` or undefined, `toe(result)`
 itself will throw an error.
 
-## More details
+e.g.
+
+```ts
+import { toe } from "graphql-toe";
+
+// Example data from GraphQL
+const result = {
+  data: {
+    deep: {
+      withList: [
+        { int: 1 },
+        {
+          /* `null` because an error occurred */
+          int: null,
+        },
+        { int: 3 },
+      ],
+    },
+  },
+  errors: [{ message: "Two!", path: ["deep", "withList", 1, "int"] }],
+};
+
+// TOE'd data:
+const data = toe(result);
+
+// Returns `3`:
+data.deep.withList[2].int;
+
+// Returns an object with the key `int`
+data.deep.withList[1];
+
+// Throws the error `Two!`
+data.deep.withList[1].int;
+```
+
+## More details
 
 On the server side, GraphQL captures errors, replaces them in the returned
 `data` with a `null`, and adds them to the `errors` object. Clients typically
