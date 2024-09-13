@@ -10,6 +10,10 @@
     "type": "git",
     "url": "https+git://github.com/graphile/graphql-toe.git"
   },
+  "bugs": {
+    "url": "https://github.com/graphile/graphql-toe/issues"
+  },
+  "homepage": "https://github.com/graphile/graphql-toe",
   "keywords": [
     "graphql",
     "throw",
