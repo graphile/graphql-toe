@@ -61,3 +61,8 @@ React's `<ErrorBoundary />` component!
       objects, making key traversal faster
 - [ ] Add an optimized `toe()` where inputs are modified in-place (mutated) for
       maximum performance
+
+## History
+
+Version 0.1.0 of this module was released from the San Francisco Centre the day
+after GraphQLConf, following many fruitful discussions around nullability.
