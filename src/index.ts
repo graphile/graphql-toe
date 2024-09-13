@@ -22,7 +22,33 @@ function toeObj<TData extends Record<string, any>>(
   const keys = errors.map((e) => e.path[depth]) as string[];
   const obj = Object.create(null);
   for (const key of Object.keys(data)) {
-    toeInner(data, depth, errors, keys, obj, key);
+    const value = data[key];
+    if (keys.includes(key)) {
+      // Guaranteed to have at least one entry
+      const filteredErrors = errors.filter((e) => e.path[depth] === key);
+
+      if (value === null) {
+        // CONSIDER: error wrap? E.g. so it's `instanceof Error`?
+        const error = filteredErrors[0];
+        // This is where the error is!
+        // obj[key] = value;
+        Object.defineProperty(obj, key, {
+          enumerable: true,
+          get() {
+            throw error;
+          },
+        });
+      } else {
+        // Recurse
+        if (Array.isArray(value)) {
+          return toeArr(value, depth + 1, filteredErrors) as any;
+        } else {
+          return toeObj(value, depth + 1, filteredErrors);
+        }
+      }
+    } else {
+      obj[key] = value;
+    }
   }
   return obj as TData;
 }
@@ -32,47 +58,37 @@ function toeArr<TData>(
   depth: number,
   errors: readonly GraphQLError[],
 ): readonly TData[] {
+  // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as number[];
   const arr = Object.create(null);
   for (let index = 0, l = data.length; index < l; index++) {
-    toeInner(data, depth, errors, keys, arr, index);
+    const value = data[index];
+    if (keys.includes(index)) {
+      // Guaranteed to have at least one entry
+      const filteredErrors = errors.filter((e) => e.path[depth] === index);
+
+      if (value === null) {
+        // CONSIDER: error wrap? E.g. so it's `instanceof Error`?
+        const error = filteredErrors[0];
+        // This is where the error is!
+        // arr[index] = value;
+        Object.defineProperty(arr, index, {
+          enumerable: true,
+          get() {
+            throw error;
+          },
+        });
+      } else {
+        // Recurse
+        if (Array.isArray(value)) {
+          return toeArr(value, depth + 1, filteredErrors);
+        } else {
+          return toeObj(value as any, depth + 1, filteredErrors);
+        }
+      }
+    } else {
+      arr[index] = value;
+    }
   }
   return arr as readonly TData[];
-}
-
-function toeInner(
-  data: any,
-  depth: number,
-  errors: readonly GraphQLError[],
-  keys: (string | number)[],
-  obj: any,
-  key: number | string,
-): void {
-  const value = data[key];
-  if (keys.includes(key)) {
-    // Guaranteed to have at least one entry
-    const filteredErrors = errors.filter((e) => e.path[depth] === key);
-
-    if (value === null) {
-      // CONSIDER: error wrap? E.g. so it's `instanceof Error`?
-      const error = filteredErrors[0];
-      // This is where the error is!
-      // obj[key] = value;
-      Object.defineProperty(obj, key, {
-        enumerable: true,
-        get() {
-          throw error;
-        },
-      });
-    } else {
-      // Recurse
-      if (Array.isArray(value)) {
-        obj[key] = toeArr(value, depth + 1, filteredErrors) as any;
-      } else {
-        obj[key] = toeObj(value, depth + 1, filteredErrors);
-      }
-    }
-  } else {
-    obj[key] = value;
-  }
 }
