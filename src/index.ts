@@ -1,22 +1,35 @@
 interface GraphQLError {
   message: string;
+  path: ReadonlyArray<string | number> | undefined;
+}
+interface GraphQLErrorWithPath extends GraphQLError {
   path: ReadonlyArray<string | number>;
 }
 
 export function toe<TData extends Record<string, any>>(result: {
-  data: TData;
-  errors: readonly GraphQLError[];
+  data?: TData | null | undefined;
+  errors?: readonly GraphQLError[] | undefined;
 }): TData {
-  if (!result.errors || result.errors.length === 0) {
-    return result.data;
+  const { data, errors } = result;
+  if (!data) {
+    if (!errors) {
+      throw new Error(
+        "Invalid call to graphql-toe; neither data nor errors were present",
+      );
+    } else {
+      throw errors[0];
+    }
   }
-  return toeObj(result.data, 0, result.errors);
+  if (!errors || errors.length === 0) {
+    return data;
+  }
+  return toeObj(data, 0, errors as readonly GraphQLErrorWithPath[]);
 }
 
 function toeObj<TData extends Record<string, any>>(
   data: TData,
   depth: number,
-  errors: readonly GraphQLError[],
+  errors: readonly GraphQLErrorWithPath[],
 ): TData {
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as string[];
@@ -56,7 +69,7 @@ function toeObj<TData extends Record<string, any>>(
 function toeArr<TData>(
   data: readonly TData[],
   depth: number,
-  errors: readonly GraphQLError[],
+  errors: readonly GraphQLErrorWithPath[],
 ): readonly TData[] {
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as number[];

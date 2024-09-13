@@ -39,17 +39,30 @@ const schema = new GraphQLSchema({
  * @param {string} source
  */
 async function genResult(source) {
-  return graphql({
-    schema,
-    source,
-  });
+  return toe(
+    await graphql({
+      schema,
+      source,
+    }),
+  );
 }
 
 test(async () => {
-  const result = await genResult(`{mol}`);
-  assert.deepEqual(result, {
-    data: {
-      mol: 42,
-    },
+  const data = await genResult(`{mol}`);
+  assert.deepEqual(data, {
+    mol: 42,
   });
+});
+
+test(async () => {
+  const data = await genResult(`{mole}`);
+  let err;
+  try {
+    console.log(data.mole);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err);
+  assert.deepEqual(err.path, ["mole"]);
+  assert.deepEqual(err.message, "Fourty two!");
 });
