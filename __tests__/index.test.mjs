@@ -75,7 +75,9 @@ test("simple error", async () => {
 });
 
 test("deep error", async () => {
-  const data = await genResult(`{deep{withList{int}}}`);
+  const data =
+    /** @type {{deep: {withList: Array<{int: number}>}}} */
+    (await genResult(`{deep{withList{int}}}`));
   assert.deepEqual(data.deep.withList[0], { int: 1 });
   assert.deepEqual(data.deep.withList[2], { int: 3 });
   assert.ok(data.deep.withList[1]);
