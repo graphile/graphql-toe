@@ -3,35 +3,23 @@
 import { test } from "node:test";
 import * as assert from "node:assert";
 import { toe } from "../dist/index.js";
-import {
-  graphql,
-  GraphQLSchema,
-  GraphQLObjectType,
-  GraphQLNonNull,
-  GraphQLInt,
-  GraphQLList,
-} from "graphql";
+import { graphql, buildSchema } from "graphql";
 
-const Query = new GraphQLObjectType({
-  name: "Query",
-  fields: {
-    mol: {
-      type: GraphQLInt,
-      resolve() {
-        return 42;
-      },
-    },
-    mole: {
-      type: GraphQLInt,
-      resolve() {
-        throw new Error("Fourty two!");
-      },
-    },
+const schema = buildSchema(`
+type Query {
+mol: Int
+mole: Int
+}
+`);
+
+const rootValue = {
+  mol() {
+    return 42;
   },
-});
-const schema = new GraphQLSchema({
-  query: Query,
-});
+  mole() {
+    throw new Error("Fourty two!");
+  },
+};
 
 /**
  * Fn
@@ -43,6 +31,7 @@ async function genResult(source) {
     await graphql({
       schema,
       source,
+      rootValue,
     }),
   );
 }
