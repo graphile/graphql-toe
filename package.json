@@ -1,6 +1,6 @@
 {
   "name": "graphql-toe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GraphQL Throw-On-Error - incorporate error handling back into the reading of your data, so you can handle errors in the most natural way.",
   "main": "dist/index.js",
   "scripts": {
