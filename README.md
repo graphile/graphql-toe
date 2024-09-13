@@ -59,7 +59,6 @@ const result = {
     },
   },
   errors: [
-    // The error that occurred
     {
       message: "Two!",
       // When you read from this path, an error will be thrown
