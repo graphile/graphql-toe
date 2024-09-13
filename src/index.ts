@@ -41,9 +41,9 @@ function toeObj<TData extends Record<string, any>>(
       } else {
         // Recurse
         if (Array.isArray(value)) {
-          return toeArr(value, depth + 1, filteredErrors) as any;
+          obj[key] = toeArr(value, depth + 1, filteredErrors) as any;
         } else {
-          return toeObj(value, depth + 1, filteredErrors);
+          obj[key] = toeObj(value, depth + 1, filteredErrors);
         }
       }
     } else {
@@ -81,9 +81,9 @@ function toeArr<TData>(
       } else {
         // Recurse
         if (Array.isArray(value)) {
-          return toeArr(value, depth + 1, filteredErrors);
+          arr[index] = toeArr(value, depth + 1, filteredErrors);
         } else {
-          return toeObj(value as any, depth + 1, filteredErrors);
+          arr[index] = toeObj(value as any, depth + 1, filteredErrors);
         }
       }
     } else {
