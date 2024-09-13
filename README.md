@@ -58,7 +58,14 @@ const result = {
       ],
     },
   },
-  errors: [{ message: "Two!", path: ["deep", "withList", 1, "int"] }],
+  errors: [
+    // The error that occurred
+    {
+      message: "Two!",
+      // When you read from this path, an error will be thrown
+      path: ["deep", "withList", 1, "int"],
+    },
+  ],
 };
 
 // TOE'd data:
