@@ -1,6 +1,10 @@
 # GraphQL TOE
 
-**Throw On Error**
+> Like bumping your toe on something... I usually throw things around after that
+> happens  
+> -- Pascal Senn, ChilliCream
+
+TOE: **Throw On Error**
 
 ## What is it?
 
@@ -16,6 +20,18 @@ nullability" (i.e. you need to do fewer null checks since more of your types can
 be non-nullable, even if errors might occur there).
 
 See "more details" below for... well... more details.
+
+## Zero-dependencies
+
+This is a simple single-js-file module, it shouldn't add much to your bundle
+size (v0.1.1 requires **just 468 bytes** gzipped
+[according to bundlephobia](https://bundlephobia.com/package/graphql-toe@0.1.1))
+and can be used with any client that will provide you `data` and `errors` - even
+`fetch()`!
+
+If you want the errors thrown to be of a particular class (e.g. `GraphQLError`
+or just `Error`) then you should map them before feeding to `toe()` - we just
+throw the raw error object you pass in.
 
 ## Installation
 
