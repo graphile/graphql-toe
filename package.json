@@ -1,0 +1,31 @@
+{
+  "name": "graphql-toe",
+  "version": "0.0.1",
+  "description": "GraphQL Throw-On-Error - incorporate error handling back into the reading of your data, so you can handle errors in the most natural way.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https+git://github.com/graphile/graphql-toe.git"
+  },
+  "keywords": [
+    "graphql",
+    "throw",
+    "error",
+    "errors",
+    "raise",
+    "exception",
+    "semantic",
+    "null",
+    "non-null",
+    "nullability",
+    "null",
+    "only",
+    "on",
+    "error"
+  ],
+  "author": "Benjie Gillam <code@benjiegillam.com>",
+  "license": "MIT"
+}
