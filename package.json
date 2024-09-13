@@ -27,5 +27,11 @@
     "error"
   ],
   "author": "Benjie Gillam <code@benjiegillam.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.7",
+    "graphql": "^16.9.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2"
+  }
 }
