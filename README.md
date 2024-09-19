@@ -35,6 +35,8 @@ throw the raw error object you pass in.
 
 ## Installation
 
+Pick the line that relates to your package manager:
+
 ```bash
 npm install --save graphql-toe
 yarn add graphql-toe
@@ -43,9 +45,12 @@ pnpm install --save graphql-toe
 
 ## Usage
 
+### Overview
+
 ```ts
 import { toe } from "graphql-toe";
 
+// const result = do something returning an object with { data, errors }
 const data = toe(result);
 ```
 
@@ -95,6 +100,54 @@ data.deep.withList[1];
 // Throws the error `Two!`
 data.deep.withList[1].int;
 ```
+
+How to get `result` and feed it to `toe(result)` will depend on the client
+you're using. Here are some examples:
+
+### URQL
+
+An exchange for "throw on error" has been submitted here:
+https://github.com/urql-graphql/urql/pull/3677
+
+### Apollo Client
+
+Get `data` and `error` from `useQuery()`; then extract `errors` from
+`error?.graphQLErrors`. Combine these into a response object (`const response =
+{ data, errors }`) and feed to `toe()`. The result is your TOE'd data. Of
+course, this is no good if Apollo never returns you partial data, so you must
+also use `errorPolicy` to return `'all'` errors.
+
+For example, you might use a replacement to `useQuery()` such as:
+
+```ts
+import { toe } from "graphql-toe";
+
+function useQueryTOE(document, options) {
+  // TODO: test me!
+  const { data: rawData, error } = useQuery(document, { errorPolicy: 'all', ...options });
+  const result = { data: rawData, errors: error?.graphQLErrors }
+  const data = toe(result);
+  return data;
+}
+```
+
+Note similar changes should be made to mutation and subscription operations.
+
+### fetch()-based clients
+
+GraphQL clients that return the server response directly (e.g. `fetch()`,
+`graffle`, etc) can just feed the result directly into `toe(result)`:
+
+```ts
+import { toe } from "graphql-toe";
+
+// const response = await fetch('/graphql', { method: "POST", headers: ..., body: ... });
+// if (!response.ok) throw new Error("Uh-oh!");
+
+const result = await response.json()
+const data = toe(result);
+```
+
 
 ## More details
 
