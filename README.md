@@ -8,7 +8,7 @@
 TOE makes GraphQL errors into real JavaScript errors, so you can stop writing
 code that second-guesses your data!
 
-Works seamlessly with `try`/`catch`, or your frameworks' error handling such as
+Works seamlessly with `try`/`catch`, or your framework's error handling such as
 `<ErrorBoundary />` in React or SolidJS. And, with semantic nullability, reduce
 the need for null checks in your client code!
 
@@ -93,7 +93,7 @@ function useQueryTOE(document, options) {
 }
 ```
 
-Note: similar changes should be made to mutation and subscription operations.
+Note: apply similar changes to mutations and subscriptions.
 
 ### URQL
 
@@ -182,11 +182,11 @@ Normally this intent is lost and clients still need to check for `null`, but
 with `toe()` you can treat these fields as non-nullable: a `null` here will
 throw.
 
-To get the full benefit in TypeScript, pair `toe()` with
+In TypeScript, use
 [semanticToStrict from graphql-sock](https://github.com/graphile/graphql-sock?tab=readme-ov-file#semantic-to-strict)
-which rewrites semantic-non-null to traditional non-null before type generation.
+to rewrite semantic-non-null to traditional non-null for type generation.
 
-Together this gives you:
+Together, this combination gives you:
 
 - More accurate codegen types
 - Improved DX with fewer null checks
@@ -195,7 +195,7 @@ Together this gives you:
 ## Motivation
 
 On the server side, GraphQL captures errors, replaces them in the returned
-`data` with a `null`, and adds them to the `errors` object. Clients typically
+`data` with a `null`, and adds them to the `errors` array. Clients typically
 then have to look at `data` and `errors` in combination to determine if a `null`
 is a "true null" (just a `null` value) or an "error null" (a `null` with a
 matching error in the `errors` list). This is unwieldy.
@@ -205,8 +205,8 @@ error propagation being disabled on the server. Over time, I hope all major
 GraphQL clients will integrate error handling deep into their architecture, but
 in the mean time this project can add support for this future behavior to almost
 any GraphQL client by re-introducing thrown errors into your data. Handle errors
-the way your programming language or framework is designed to, they don't need
-to be GraphQL-specific!
+the way your programming language or framework is designed to — no need for
+GraphQL-specific logic.
 
 ## Deeper example
 
