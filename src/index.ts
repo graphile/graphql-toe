@@ -71,7 +71,7 @@ function toeArr<TData>(
 ): readonly TData[] {
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as number[];
-  const arr = Object.create(null);
+  const arr = new Array<TData>(data.length);
   for (let index = 0, l = data.length; index < l; index++) {
     const value = data[index];
     if (keys.includes(index)) {
@@ -97,5 +97,5 @@ function toeArr<TData>(
       arr[index] = value;
     }
   }
-  return arr as readonly TData[];
+  return arr;
 }
