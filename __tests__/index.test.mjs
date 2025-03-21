@@ -27,15 +27,16 @@ const rootValue = {
     throw new Error("Fourty two!");
   },
   deep: {
-    withList: [
-      { int: 1 },
-      {
-        int() {
-          throw new Error("Two!");
+    withList() {
+      return [
+        { int: 1 },
+        {
+          int: new Error("Two!"),
         },
-      },
-      { int: 3 },
-    ],
+        { int: 3 },
+        new Error("Item 4"),
+      ];
+    },
   },
 };
 
@@ -78,17 +79,31 @@ test("deep error", async () => {
   const data =
     /** @type {{deep: {withList: Array<{int: number}>}}} */
     (await genResult(`{deep{withList{int}}}`));
+  assert.equal(data.deep.withList.length, 4);
   assert.deepEqual(data.deep.withList[0], { int: 1 });
   assert.deepEqual(data.deep.withList[2], { int: 3 });
   assert.ok(data.deep.withList[1]);
   assert.ok(typeof data.deep.withList[1], "object");
-  let err;
-  try {
-    console.log(data.deep.withList[1].int);
-  } catch (e) {
-    err = e;
+  {
+    let err;
+    try {
+      console.log(data.deep.withList[1].int);
+    } catch (e) {
+      err = e;
+    }
+    assert.ok(err);
+    assert.deepEqual(err.path, ["deep", "withList", 1, "int"]);
+    assert.deepEqual(err.message, "Two!");
   }
-  assert.ok(err);
-  assert.deepEqual(err.path, ["deep", "withList", 1, "int"]);
-  assert.deepEqual(err.message, "Two!");
+  {
+    let err;
+    try {
+      console.log(data.deep.withList[3]);
+    } catch (e) {
+      err = e;
+    }
+    assert.ok(err);
+    assert.deepEqual(err.path, ["deep", "withList", 3]);
+    assert.deepEqual(err.message, "Item 4");
+  }
 });
