@@ -144,8 +144,8 @@ and [@catch](https://relay.dev/docs/guides/catch-directive/) directives.
 
 ## Zero dependencies
 
-**Just 468 bytes** gzipped
-([v0.1.1 on bundlephobia](https://bundlephobia.com/package/graphql-toe@0.1.1))
+**Just 512 bytes** gzipped
+([v1.0.0-rc.0 on bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.0))
 
 Works with _any_ GraphQL client that returns `{ data, errors }`.
 
