@@ -17,7 +17,9 @@ export function toe<TData extends Record<string, any>>(result: {
         "Invalid call to graphql-toe; neither data nor errors were present",
       );
     } else {
-      throw errors[0];
+      throw typeof AggregateError === "undefined"
+        ? errors[0]
+        : new AggregateError(errors, errors[0].message);
     }
   }
   if (!errors || errors.length === 0) {
@@ -37,12 +39,8 @@ function toeObj<TData extends Record<string, any>>(
   for (const key of Object.keys(data)) {
     const value = data[key];
     if (keys.includes(key)) {
-      // Guaranteed to have at least one entry
-      const filteredErrors = errors.filter((e) => e.path[depth] === key);
-
-      if (value === null) {
-        // CONSIDER: error wrap? E.g. so it's `instanceof Error`?
-        const error = filteredErrors[0];
+      if (value == null) {
+        const error = errors.find((e) => e.path[depth] === key);
         // This is where the error is!
         // obj[key] = value;
         Object.defineProperty(obj, key, {
@@ -52,12 +50,12 @@ function toeObj<TData extends Record<string, any>>(
           },
         });
       } else {
+        // Guaranteed to have at least one entry
+        const filteredErrors = errors.filter((e) => e.path[depth] === key);
         // Recurse
-        if (Array.isArray(value)) {
-          obj[key] = toeArr(value, depth + 1, filteredErrors) as any;
-        } else {
-          obj[key] = toeObj(value, depth + 1, filteredErrors);
-        }
+        obj[key] = Array.isArray(value)
+          ? (toeArr(value, depth + 1, filteredErrors) as any)
+          : toeObj(value, depth + 1, filteredErrors);
       }
     } else {
       obj[key] = value;
@@ -73,16 +71,12 @@ function toeArr<TData>(
 ): readonly TData[] {
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as number[];
-  const arr = Object.create(null);
+  const arr = new Array<TData>(data.length);
   for (let index = 0, l = data.length; index < l; index++) {
     const value = data[index];
     if (keys.includes(index)) {
-      // Guaranteed to have at least one entry
-      const filteredErrors = errors.filter((e) => e.path[depth] === index);
-
-      if (value === null) {
-        // CONSIDER: error wrap? E.g. so it's `instanceof Error`?
-        const error = filteredErrors[0];
+      if (value == null) {
+        const error = errors.find((e) => e.path[depth] === index);
         // This is where the error is!
         // arr[index] = value;
         Object.defineProperty(arr, index, {
@@ -92,16 +86,16 @@ function toeArr<TData>(
           },
         });
       } else {
+        // Guaranteed to have at least one entry
+        const filteredErrors = errors.filter((e) => e.path[depth] === index);
         // Recurse
-        if (Array.isArray(value)) {
-          arr[index] = toeArr(value, depth + 1, filteredErrors);
-        } else {
-          arr[index] = toeObj(value as any, depth + 1, filteredErrors);
-        }
+        arr[index] = Array.isArray(value)
+          ? toeArr(value, depth + 1, filteredErrors)
+          : toeObj(value as any, depth + 1, filteredErrors);
       }
     } else {
       arr[index] = value;
     }
   }
-  return arr as readonly TData[];
+  return arr;
 }
