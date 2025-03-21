@@ -1,6 +1,6 @@
 # GraphQL TOE (Throw On Error)
 
-> Like bumping your toe on something... I usually throw things!  
+> Like bumping your **toe** on something... I usually **throw** things!  
 > -- Pascal Senn, ChilliCream
 
 **GraphQL gives you `null`... Was that a real `null`, or an error?**
