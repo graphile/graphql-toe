@@ -17,7 +17,9 @@ export function toe<TData extends Record<string, any>>(result: {
         "Invalid call to graphql-toe; neither data nor errors were present",
       );
     } else {
-      throw errors[0];
+      throw typeof AggregateError === "undefined"
+        ? errors[0]
+        : new AggregateError(errors, errors[0].message);
     }
   }
   if (!errors || errors.length === 0) {
