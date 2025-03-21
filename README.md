@@ -3,17 +3,14 @@
 > Like bumping your toe on something... I usually throw things!  
 > -- Pascal Senn, ChilliCream
 
-**Stop manually checking if `null` is an error.** And, with semantic
-nullability, reduce the need for null checks in your client code!
+**GraphQL gives you `null`... Was that a real `null`, or an error?**
 
-TOE makes GraphQL errors behave like real JavaScript errors: it throws when you
-read from a field that failed. Works seamlessly with `try`/`catch`, or your
-frameworks' error handling such as `<ErrorBoundary />` in React or SolidJS.
+TOE makes GraphQL errors into real JavaScript errors, so you can stop writing
+code that second-guesses your data!
 
-Uses
-[getters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
-to rewrite your GraphQL result so when you read from an errored GraphQL field an
-error is thrown.
+Works seamlessly with `try`/`catch`, or your frameworks' error handling such as
+`<ErrorBoundary />` in React or SolidJS. And, with semantic nullability, reduce
+the need for null checks in your client code!
 
 ## Example
 
@@ -30,11 +27,19 @@ data.users[0]; // { id: 1 }
 data.users[1]; // Throws "Loading user 2 failed!"
 ```
 
+## How?
+
+Returns a copy of your GraphQL result data that uses
+[getters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
+to throw an error when you read from an errored GraphQL field. And it's
+efficient: only the parts of the response that are impacted by errors are copied
+(if there are no errors, the underlying data is returned directly).
+
 ## Why?
 
-GraphQL replaces errored fields with `null`, so you can never trust a `null` to
-be simply a `null`, you must always check the `"errors"` list to see if it's
-actually an error... Not fun!
+GraphQL replaces errored fields with `null`, so you can't trust a `null` to mean
+"nothing"; you must always check to see if a `null` actually represents an error
+from the "errors" list.
 
 `toe()` fixes this. It reintroduces errors into your data using getters that
 throw when accessed.
@@ -72,15 +77,19 @@ replaced with throwing getters.
 How to get `result` and feed it to `toe(result)` will depend on the client
 you're using. Here are some examples:
 
-### Apollo Client
+### Apollo Client (React)
 
 ```ts
 import { useQuery } from "@apollo/client";
 import { toe } from "graphql-toe";
+import { useMemo } from "react";
 
 function useQueryTOE(document, options) {
   const result = useQuery(document, { ...options, errorPolicy: "all" });
-  return toe({ data: result.data, errors: result.error?.graphQLErrors });
+  return useMemo(
+    () => toe({ data: result.data, errors: result.error?.graphQLErrors }),
+    [result.data, result.error],
+  );
 }
 ```
 
@@ -132,9 +141,9 @@ const data = toe(graphqlResponse);
 
 ### Relay
 
-Don't use this! Use
+Relay has native support for error handling via the
 [@throwOnFieldError](https://relay.dev/docs/guides/throw-on-field-error-directive/)
-instead!
+and [@catch](https://relay.dev/docs/guides/catch-directive/) directives.
 
 ## Zero dependencies
 
@@ -143,7 +152,7 @@ instead!
 
 Works with _any_ GraphQL client that returns `{ data, errors }`.
 
-Errors are thrown as-is; you can pre-process them to wrapp in `Error` or
+Errors are thrown as-is; you can pre-process them to wrap in `Error` or
 `GraphQLError` if needed:
 
 ```ts
@@ -167,22 +176,24 @@ const data = toe(mappedResponse);
 
 ## Semantic nullability
 
-With the
+The
 [@semanticNonNull](https://specs.apollo.dev/nullability/v0.4/#@semanticNonNull)
-directive, schema designers can indicate positions that will only be `null` if
-an error occurs (i.e. the underlying data is never null in the server's
-stores) - we call these positions _semantically_ non-nullable.
+directive lets schema designers mark fields where `null` is **never a valid
+value**; so if you see `null`, it means an error occurred.
 
-With `toe()` these semantically non-nullable positions can be treated as
-non-null - you know that you can never read a `null` from them since they're
-null only on error, and `toe()` will throw that error if you attempt to read
-them.
+Normally this intent is lost and clients still need to check for `null`, but
+with `toe()` you can treat these fields as non-nullable: a `null` here will
+throw.
 
-Use
+To get the full benefit in TypeScript, pair `toe()` with
 [semanticToStrict from graphql-sock](https://github.com/graphile/graphql-sock?tab=readme-ov-file#semantic-to-strict)
-to replace semantic non-null with strict (traditional) non-null so your type
-generator can put non-nullable in more positions, reducing the number of null
-checks you need to do in client code.
+which rewrites semantic-non-null to traditional non-null before type generation.
+
+Together this gives you:
+
+- More accurate codegen types
+- Improved DX with fewer null checks
+- Safer, cleaner client code
 
 ## Motivation
 
