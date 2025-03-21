@@ -18,10 +18,10 @@ the need for null checks in your client code!
 import { toe } from "graphql-toe";
 
 // Imagine the second user threw an error in your GraphQL request:
-const graphqlResponse = await request("/graphql", "{ users(first: 2) { id } }");
+const result = await request("/graphql", "{ users(first: 2) { id } }");
 
 // Take the GraphQL response map and convert it into a TOE object:
-const data = toe(graphqlResponse);
+const data = toe(result);
 
 data.users[0]; // { id: 1 }
 data.users[1]; // Throws "Loading user 2 failed!"
@@ -85,10 +85,10 @@ import { toe } from "graphql-toe";
 import { useMemo } from "react";
 
 function useQueryTOE(document, options) {
-  const result = useQuery(document, { ...options, errorPolicy: "all" });
+  const rawResult = useQuery(document, { ...options, errorPolicy: "all" });
   return useMemo(
-    () => toe({ data: result.data, errors: result.error?.graphQLErrors }),
-    [result.data, result.error],
+    () => toe({ data: rawResult.data, errors: rawResult.error?.graphQLErrors }),
+    [rawResult.data, rawResult.error],
   );
 }
 ```
@@ -115,11 +115,8 @@ const client = new Client({
 ```ts
 import { request } from "graffle";
 
-const graphqlResponse = await request(
-  "https://api.spacex.land/graphql/",
-  document,
-);
-const data = toe(graphqlResponse);
+const result = await request("https://api.spacex.land/graphql/", document);
+const data = toe(result);
 ```
 
 ### fetch()
@@ -135,8 +132,8 @@ const response = await fetch("/graphql", {
   body: JSON.stringify({ query: "{ __schema { queryType { name } } }" }),
 });
 if (!response.ok) throw new Error("Uh-oh!");
-const graphqlResponse = await response.json();
-const data = toe(graphqlResponse);
+const result = await response.json();
+const data = toe(result);
 ```
 
 ### Relay
@@ -159,9 +156,9 @@ Errors are thrown as-is; you can pre-process them to wrap in `Error` or
 import { GraphQLError } from "graphql";
 import { toe } from "graphql-toe";
 
-const mappedResponse = {
-  ...graphqlResponse,
-  errors: graphqlResponse.errors?.map(
+const mappedResult = {
+  ...result,
+  errors: result.errors?.map(
     (e) =>
       new GraphQLError(e.message, {
         positions: e.positions,
@@ -171,7 +168,7 @@ const mappedResponse = {
       }),
   ),
 };
-const data = toe(mappedResponse);
+const data = toe(mappedResult);
 ```
 
 ## Semantic nullability
