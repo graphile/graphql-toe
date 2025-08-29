@@ -15,7 +15,7 @@ export function toe<TData extends Record<string, any>>(result: {
   // Fast path: no errors.
   // Note: `errors.length === 0` is forbidden by the spec, but we'll handle it
   // for wider compatibility.
-  if (!errors || errors.length === 0) {
+  if (!errors || !errors.length) {
     if (!data) throw new Error("Invalid arguments");
     return data;
   }
@@ -36,8 +36,8 @@ function toeObj<TData extends Record<string, any>>(
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as string[];
   const obj = Object.create(null);
-  for (const [key, value] of Object.entries(data)) {
-    handleErrorsForKey(errors, depth, keys, obj, key, value);
+  for (const key of Object.keys(data)) {
+    handleErrorsForKey(errors, depth, keys, obj, key, data[key]);
   }
   return obj as TData;
 }
