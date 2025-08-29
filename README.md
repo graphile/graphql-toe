@@ -10,7 +10,7 @@ Works with:
 - window.fetch()
 - _any_ GraphQL client that returns the JSON `{ data, errors }`
 
-**Not needed with Relay**; it has native error handling support via the
+**Not needed with Relay** as it has native error handling support via the
 [@throwOnFieldError](https://relay.dev/docs/guides/throw-on-field-error-directive/)
 and [@catch](https://relay.dev/docs/guides/catch-directive/) directives.
 
