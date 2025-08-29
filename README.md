@@ -1,55 +1,37 @@
 # GraphQL TOE (Throw On Error)
 
-> Like bumping your **toe** on something... I usually **throw** things!  
-> -- Pascal Senn, ChilliCream
+**The 512 byte solution to your GraphQL ambiguous `null` woes.**
 
-**GraphQL gives you `null`... Was that a real `null`, or an error?**
+## The problem
 
-TOE makes GraphQL errors into real JavaScript errors, so you can stop writing
-code that second-guesses your data!
+You read `null` from a field in GraphQL... but is that a data-null ("that data
+explicitly does not exist") or an error-null ("something went wrong")? This is
+an important distinction: your boyfriend's profile page showing `Partner: none`
+is very different than it showing `Error loading partner`!
 
-Works seamlessly with `try`/`catch`, or your framework's error handling such as
-`<ErrorBoundary />` in React or SolidJS. And, with semantic nullability, reduce
-the need for null checks in your client code!
+If you're not using an error-handling GraphQL client, then for each `null` you
+see in a GraphQL response you must check through the `errors` list to determine
+if it relates to an error or not. To do so, you need to know the path of the
+currently rendering data - instead of just passing the data to your component,
+you need to pass the root list of errors, and the path of the data being
+rendered.
 
-## Example
+Managing this yourself is a huge hassle, and most people don't bother - instead
+either rejecting requests that include errors (and losing the "partial success"
+benefit of GraphQL) or treating all `null` as ambiguous: maybe it errored, maybe
+it's null, we don't know.
 
-```ts
-import { toe } from "graphql-toe";
+## The solution
 
-// Imagine the second user threw an error in your GraphQL request:
-const result = await request("/graphql", "{ users(first: 2) { id } }");
+GraphQL-TOE transforms your GraphQL response (data &amp; errors) into a new
+`data` object that throws when you access a position that is `null` due to an
+error. As such, your application can never read an error-null (the error will be
+thrown) - so if you read a `null` you know it's definitely a data-null and is
+safe to render as such. And for errors, you can handle them with native
+JavaScript methods like `try`/`catch`, or those built on top of them such as
+React's `<ErrorBoundary />`!
 
-// Take the GraphQL response map and convert it into a TOE object:
-const data = toe(result);
-
-data.users[0]; // { id: 1 }
-data.users[1]; // Throws "Loading user 2 failed!"
-```
-
-## How?
-
-Returns a copy of your GraphQL result data that uses
-[getters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
-to throw an error when you read from an errored GraphQL field. And it's
-efficient: only the parts of the response that are impacted by errors are copied
-(if there are no errors, the underlying data is returned directly).
-
-## Why?
-
-GraphQL replaces errored fields with `null`, so you can't trust a `null` to mean
-"nothing"; you must always check to see if a `null` actually represents an error
-from the "errors" list.
-
-`toe()` fixes this. It reintroduces errors into your data using getters that
-throw when accessed.
-
-That means:
-
-- `try`/`catch` just works
-- `<ErrorBoundary />` components can catch data-layer errors
-- Your GraphQL types’ [_semantic_ nullability](#semantic-nullability) matters
-  again
+**Stop writing code that second-guesses your data; re-throw GraphQL errors!**
 
 ## Installation
 
@@ -72,10 +54,68 @@ If `result.data` is `null` or not present, `toe(result)` will throw immediately.
 Otherwise, `data` is a derivative of `result.data` where errored fields are
 replaced with throwing getters.
 
+## Zero dependencies
+
+**Just 512 bytes** gzipped
+([v1.0.0-rc.0 on bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.0))
+
+Works with _any_ GraphQL client that returns `{ data, errors }`.
+
+Errors are thrown as-is; you can pre-process them to wrap in `Error` or
+`GraphQLError` if needed:
+
+```ts
+import { GraphQLError } from "graphql";
+import { toe } from "graphql-toe";
+
+const mappedResult = {
+  ...result,
+  errors: result.errors?.map(
+    (e) =>
+      new GraphQLError(e.message, {
+        positions: e.positions,
+        path: e.path,
+        originalError: e,
+        extensions: e.extensions,
+      }),
+  ),
+};
+const data = toe(mappedResult);
+```
+
+## Example
+
+```ts
+import { toe } from "graphql-toe";
+
+// Result of query `{ users(first: 3) { id, name } }`
+const graphqlResult = {
+  data: {
+    users: [
+      { id: 1, name: "Alice" },
+      null, // < An error occurred
+      { id: 3, name: "Caroline" },
+    ],
+  },
+  errors: [
+    {
+      path: ["users", 1],
+      message: "Loading user 2 failed!",
+    },
+  ],
+};
+
+// Return the transformed data that with Throw On Error:
+const data = toe(graphqlResult);
+
+console.log(data.users[0]); // Logs { id: 1, name: "Alice" }
+console.log(data.users[1]); // Throws "Loading user 2 failed!"
+```
+
 ## Framework examples
 
-How to get `result` and feed it to `toe(result)` will depend on the client
-you're using. Here are some examples:
+Different frameworks and libraries have different approaches to feeding the
+GraphQL result into GraphQL-TOE:
 
 ### Apollo Client (React)
 
@@ -93,7 +133,9 @@ function useQueryTOE(document, options) {
 }
 ```
 
-Note: apply similar changes to mutations and subscriptions.
+Now simply replace all usages of `useQuery()` with `useQueryTOE()`.
+
+Note: apply similar changes for mutations and subscriptions.
 
 ### URQL
 
@@ -140,47 +182,20 @@ const data = toe(result);
 
 Relay has native support for error handling via the
 [@throwOnFieldError](https://relay.dev/docs/guides/throw-on-field-error-directive/)
-and [@catch](https://relay.dev/docs/guides/catch-directive/) directives.
-
-## Zero dependencies
-
-**Just 512 bytes** gzipped
-([v1.0.0-rc.0 on bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.0))
-
-Works with _any_ GraphQL client that returns `{ data, errors }`.
-
-Errors are thrown as-is; you can pre-process them to wrap in `Error` or
-`GraphQLError` if needed:
-
-```ts
-import { GraphQLError } from "graphql";
-import { toe } from "graphql-toe";
-
-const mappedResult = {
-  ...result,
-  errors: result.errors?.map(
-    (e) =>
-      new GraphQLError(e.message, {
-        positions: e.positions,
-        path: e.path,
-        originalError: e,
-        extensions: e.extensions,
-      }),
-  ),
-};
-const data = toe(mappedResult);
-```
+and [@catch](https://relay.dev/docs/guides/catch-directive/) directives - use
+that instead!
 
 ## Semantic nullability
 
 The
 [@semanticNonNull](https://specs.apollo.dev/nullability/v0.4/#@semanticNonNull)
 directive lets schema designers mark fields where `null` is **never a valid
-value**; so if you see `null`, it means an error occurred.
+value**; a `null` in such a position must mean an error occurred (and thus there
+will be an entry in the `errors` list matching the path).
 
-Normally this intent is lost and clients still need to check for `null`, but
-with `toe()` you can treat these fields as non-nullable: a `null` here will
-throw.
+With `toe()` you can treat these `@semanticNonNull` fields as non-nullable since
+we know error-nulls can never be accessed; and thus your JavaScript/TypeScript
+frontend code will need fewer null checks!
 
 In TypeScript, use
 [semanticToStrict from graphql-sock](https://github.com/graphile/graphql-sock?tab=readme-ov-file#semantic-to-strict)
@@ -192,21 +207,34 @@ Together, this combination gives you:
 - Improved DX with fewer null checks
 - Safer, cleaner client code
 
+## How does it work?
+
+Creates copies of data impacted by errors, using
+[getters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
+to throw when error positions are accessed.
+
+Highly efficient: only response sections impacted by errors are copied; with no
+errors the underlying data is returned verbatim.
+
 ## Motivation
 
-On the server side, GraphQL captures errors, replaces them in the returned
-`data` with a `null`, and adds them to the `errors` array. Clients typically
-then have to look at `data` and `errors` in combination to determine if a `null`
-is a "true null" (just a `null` value) or an "error null" (a `null` with a
-matching error in the `errors` list). This is unwieldy.
+There's growing consensus amongst the GraphQL Working Group that the future of
+GraphQL has errors handled on the client side, with server-side error
+propagation disabled. This fixes a number of issues, among them the
+proliferation of null types (and the associated nullability checks peppering
+client code), and inability to safely write data to normalized caches if that
+data came from a request containing errors.
 
-I see the future of GraphQL as errors being handled on the client side, and
-error propagation being disabled on the server. Over time, I hope all major
-GraphQL clients will integrate error handling deep into their architecture, but
-in the mean time this project can add support for this future behavior to almost
-any GraphQL client by re-introducing thrown errors into your data. Handle errors
-the way your programming language or framework is designed to — no need for
-GraphQL-specific logic.
+Over time, we hope all major GraphQL clients will integrate error handling deep
+into their architecture so that users don't need to think about it. In the mean
+time, this project can add support for this future behavior to almost any
+GraphQL client by re-introducing thrown errors into your data.
+
+**Handle errors the way your programming language or framework is designed to —
+no need for GraphQL-specific logic.**
+
+Read more here on the motivation behind this here:
+https://benjie.dev/graphql/nullability/
 
 ## Deeper example
 
@@ -257,3 +285,6 @@ data.deep.withList[1].int;
 
 Version 0.1.0 of this module was released from the San Francisco Centre the day
 after GraphQLConf 2024, following many fruitful discussions around nullability.
+
+Version 1.0.0 of this module was released just before GraphQLConf 2025, as the
+result of what we call Conference-Driven Development.
