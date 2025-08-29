@@ -1,6 +1,16 @@
 # GraphQL TOE (Throw On Error)
 
-**The 512 byte solution to your GraphQL ambiguous `null` woes.**
+**The <512 byte solution to your GraphQL ambiguous `null` woes.**
+
+Works with:
+
+- Apollo Client
+- URQL
+- graffle
+- window.fetch()
+- _any_ GraphQL client that returns the JSON `{ data, errors }`
+
+Not needed with Relay; it supports error handling natively!
 
 ## The problem
 
@@ -19,17 +29,21 @@ rendered.
 Managing this yourself is a huge hassle, and most people don't bother - instead
 either rejecting requests that include errors (and losing the "partial success"
 benefit of GraphQL) or treating all `null` as ambiguous: maybe it errored, maybe
-it's null, we don't know.
+it's null, we don't know. Or worse, they treat error nulls as if they are data
+nulls, and cause much heartbreak!
+
+**Well, no more!**
 
 ## The solution
 
-GraphQL-TOE transforms your GraphQL response (data &amp; errors) into a new
-`data` object that throws when you access a position that is `null` due to an
-error. As such, your application can never read an error-null (the error will be
-thrown) - so if you read a `null` you know it's definitely a data-null and is
-safe to render as such. And for errors, you can handle them with native
-JavaScript methods like `try`/`catch`, or those built on top of them such as
-React's `<ErrorBoundary />`!
+GraphQL-TOE transforms your GraphQL response (`{ data: {...}, errors: [...] }`)
+into a new object that looks exactly like `data`, except it throws when you
+access a position that is `null` due to an error. As such, your application can
+never read an error-null (because the error will be thrown if you try) - so if
+you read a `null` value you know it's definitely a data-null and can render it
+as such. And for the errors... you can handle them as any other throw error:
+with native JavaScript methods like `try`/`catch`, or those built on top of them
+such as React's `<ErrorBoundary />`!
 
 **Stop writing code that second-guesses your data; re-throw GraphQL errors!**
 
@@ -56,7 +70,7 @@ replaced with throwing getters.
 
 ## Zero dependencies
 
-**Just 512 bytes** gzipped
+**Under 512 bytes** gzipped
 ([v1.0.0-rc.0 on bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.0))
 
 Works with _any_ GraphQL client that returns `{ data, errors }`.
