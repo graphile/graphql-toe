@@ -10,14 +10,16 @@ Works with:
 - window.fetch()
 - _any_ GraphQL client that returns the JSON `{ data, errors }`
 
-Not needed with Relay; it supports error handling natively!
+**Not needed with Relay**; it has native error handling support via the
+[@throwOnFieldError](https://relay.dev/docs/guides/throw-on-field-error-directive/)
+and [@catch](https://relay.dev/docs/guides/catch-directive/) directives.
 
 ## The problem
 
-You read `null` from a field in GraphQL... but is that a data-null ("that data
-explicitly does not exist") or an error-null ("something went wrong")? This is
-an important distinction: your boyfriend's profile page showing `Partner: none`
-is very different than it showing `Error loading partner`!
+You read `null` from a field in GraphQL... but is that a data-null (explicit
+non-existence) or an error-null (something went wrong)? This is an important
+distinction: your boyfriend's profile page showing `Partner: none` is very
+different than it showing `Error loading partner`!
 
 If you're not using an error-handling GraphQL client, then for each `null` you
 see in a GraphQL response you must check through the `errors` list to determine
@@ -29,8 +31,8 @@ rendered.
 Managing this yourself is a huge hassle, and most people don't bother - instead
 either rejecting requests that include errors (and losing the "partial success"
 benefit of GraphQL) or treating all `null` as ambiguous: maybe it errored, maybe
-it's null, we don't know. Or worse, they treat error nulls as if they are data
-nulls, and cause much heartbreak!
+it's null, we don't know. Or worse, they treat an error-null as if it is a
+data-null, and cause much heartbreak!
 
 **Well, no more!**
 
@@ -119,7 +121,7 @@ const graphqlResult = {
   ],
 };
 
-// Return the transformed data that with Throw On Error:
+// Return the transformed data that will Throw On Error:
 const data = toe(graphqlResult);
 
 console.log(data.users[0]); // Logs { id: 1, name: "Alice" }
@@ -208,7 +210,7 @@ value**; a `null` in such a position must mean an error occurred (and thus there
 will be an entry in the `errors` list matching the path).
 
 With `toe()` you can treat these `@semanticNonNull` fields as non-nullable since
-we know error-nulls can never be accessed; and thus your JavaScript/TypeScript
+we know an error-null can never be accessed; and thus your JavaScript/TypeScript
 frontend code will need fewer null checks!
 
 In TypeScript, use
@@ -247,7 +249,7 @@ GraphQL client by re-introducing thrown errors into your data.
 **Handle errors the way your programming language or framework is designed to —
 no need for GraphQL-specific logic.**
 
-Read more here on the motivation behind this here:
+Read more on the motivation behind this here:
 https://benjie.dev/graphql/nullability/
 
 ## Deeper example
@@ -297,8 +299,8 @@ data.deep.withList[1].int;
 
 ## History
 
-Version 0.1.0 of this module was released from the San Francisco Centre the day
-after GraphQLConf 2024, following many fruitful discussions around nullability.
+Version 0.1.0 of this module was released from San Francisco the day after
+GraphQLConf 2024, following many fruitful discussions around nullability.
 
 Version 1.0.0 of this module was released just before GraphQLConf 2025, as the
 result of what we call Conference-Driven Development.
