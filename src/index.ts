@@ -11,20 +11,20 @@ export function toe<TData extends Record<string, any>>(result: {
   errors?: readonly GraphQLError[] | undefined;
 }): TData {
   const { data, errors } = result;
-  if (!data) {
-    if (!errors) {
-      throw new Error(
-        "Invalid call to graphql-toe; neither data nor errors were present",
-      );
-    } else {
-      throw typeof AggregateError === "undefined"
-        ? errors[0]
-        : new AggregateError(errors, errors[0].message);
-    }
-  }
+
+  // Fast path: no errors.
+  // Note: `errors.length === 0` is forbidden by the spec, but we'll handle it
+  // for wider compatibility.
   if (!errors || errors.length === 0) {
+    if (!data) throw new Error("Invalid arguments");
     return data;
   }
+
+  // Beyond here, at least one error happened
+
+  if (!data) throw new AggregateError(errors, errors[0].message);
+
+  // GraphQL spec guarantees if there's data that the errors will have paths
   return toeObj(data, 0, errors as readonly GraphQLErrorWithPath[]);
 }
 
@@ -36,28 +36,22 @@ function toeObj<TData extends Record<string, any>>(
   // TODO: would it be faster to rule out duplicates via a set?
   const keys = errors.map((e) => e.path[depth]) as string[];
   const obj = Object.create(null);
-  for (const key of Object.keys(data)) {
-    const value = data[key];
+  for (const [key, value] of Object.entries(data)) {
     if (keys.includes(key)) {
       if (value == null) {
-        const error = errors.find((e) => e.path[depth] === key);
         // This is where the error is!
-        // obj[key] = value;
-        Object.defineProperty(obj, key, {
-          enumerable: true,
-          get() {
-            throw error;
-          },
-        });
+        addErrorProperty(errors, depth, key, obj);
       } else {
         // Guaranteed to have at least one entry
         const filteredErrors = errors.filter((e) => e.path[depth] === key);
+
         // Recurse
         obj[key] = Array.isArray(value)
           ? (toeArr(value, depth + 1, filteredErrors) as any)
           : toeObj(value, depth + 1, filteredErrors);
       }
     } else {
+      // Definitely no errors - use verbatim
       obj[key] = value;
     }
   }
@@ -76,26 +70,44 @@ function toeArr<TData>(
     const value = data[key];
     if (keys.includes(key)) {
       if (value == null) {
-        const error = errors.find((e) => e.path[depth] === key);
         // This is where the error is!
-        // obj[key] = value;
-        Object.defineProperty(obj, key, {
-          enumerable: true,
-          get() {
-            throw error;
-          },
-        });
+        addErrorProperty(errors, depth, key, obj);
       } else {
         // Guaranteed to have at least one entry
         const filteredErrors = errors.filter((e) => e.path[depth] === key);
+
         // Recurse
         obj[key] = Array.isArray(value)
           ? (toeArr(value, depth + 1, filteredErrors) as any)
           : toeObj(value, depth + 1, filteredErrors);
       }
     } else {
+      // Definitely no errors - use verbatim
       obj[key] = value;
     }
   }
   return obj;
+}
+
+function addErrorProperty(
+  errors: readonly GraphQLErrorWithPath[],
+  depth: number,
+  key: number | string,
+  obj: object,
+) {
+  // Assuming the GraphQL implementation stops execution of siblings when an
+  // error occurs, the **last** error that matches a path will be the error
+  // that caused error propagation to occur. So search backwards.
+  let error: GraphQLErrorWithPath;
+  for (let i = errors.length - 1; i >= 0; i--) {
+    error = errors[i];
+    if (error.path[depth] === key) break;
+  }
+
+  Object.defineProperty(obj, key, {
+    enumerable: true,
+    get() {
+      throw error;
+    },
+  });
 }
