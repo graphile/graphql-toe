@@ -73,7 +73,7 @@ replaced with throwing getters.
 ## Zero dependencies
 
 **Under 512 bytes** gzipped
-([v1.0.0-rc.0 on bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.0))
+([v1.0.0-rc.1 was 471 bytes according to bundlephobia](https://bundlephobia.com/package/graphql-toe@1.0.0-rc.1))
 
 Works with _any_ GraphQL client that returns `{ data, errors }`.
 
